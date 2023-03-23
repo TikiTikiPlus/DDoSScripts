@@ -10,16 +10,13 @@ class Packet:
         self.bytes=bytes
         self.TTL=TTL
 class Flow:
-    def __init__(self,ip_dst, port_dst, protocol,byteSize):
+    def __init__(self,timestamp, ip_dst, port_dst, protocol,byteSize, packetCount, attack):
+        self.timestamp = timestamp
         self.ip_dst = ip_dst
         self.port_dst = port_dst
         self.protocol = protocol
         self.byteSize=byteSize
-class FlowRecord:
-    def __init__(self, timestamp, flow, packetCount, attack):
-        self.startTime = timestamp
-        self.flow=flow
-        self.packetCount = packetCount
+        self.packetCount=packetCount
         self.attack = attack
 flowRecords=[]
 flows=[]
@@ -41,30 +38,31 @@ def main():
                 line=line.replace('\n','')
                 line = line.split('|')
                 if len(line) < 9:
+                    matched = False
                     #store a value into an array
-                    
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
-                    len("lowRecords")
-                    if len(flowRecords)>0:
+                    if len(flows)>0:
                         #check if packets have the same values as the flow records
-                        flow1 = Flow(packet.destination_add, packet.destination_port, packet.protocol, packet.bytes)
-                        len(flowRecords)
-                        for flow in flowRecords:
-                            print("flow " + str(flow.ip_dst) + " " + str(flow.port_dst) + " " + str(flow.protocol) + " " + str(flow.byteSize))
-                            print("flow1 " + str(flow1.ip_dst) + " " + str(flow1.port_dst) + " " + str(flow1.protocol) + " " + str(flow1.byteSize))
-                            time.sleep(3)                            
-                            if (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow.protocol) and (flow1.byteSize == flow.byteSize):
-                                print(flow1.ip_dst + " " + flow1.port_dst + " " + flow1.protocol + " " + flow1.byteSize)
+                        flow1 = Flow(packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False)
+                        len(flows)
+                        #Check for the flowrecords
+                        for flow in flows:
+                            if (((int(flow.timestamp) + 60000)) > int(flow1.timestamp)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol) and (flow1.byteSize == flow.byteSize):
                                 matched = True
-                                print(matched)
+                                flow.packetCount+=1
+                                if flow.packetCount == 5:
+                                    flow.attack=True
                                 break
                         if matched == False:
-                            flowRecords.append(flow1)
+                            print(matched)
+                            flows.append(flow1)
                     else:
-                        flowRecords.append(Flow(packet.destination_add, packet.destination_port, packet.protocol, packet.bytes))
+                        flow = Flow(packet.timeStamp,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False)
+                        flows.append(flow)
+                        
                     #check for the same dst ip addresses
-        for flow in flowRecords:
-            print(str(flow.ip_dst) + " " + str(flow.port_dst) + " " + str(flow.protocol) + " " + str(flow.byteSize))
+        for flow in flows:
+            print(str(flow.ip_dst) + " " + str(flow.port_dst) + " " + str(flow.protocol) + " " + str(flow.byteSize) + " " + str(flow.packetCount) +  " " +str(flow.attack))
 
                     
     except Exception as e:
