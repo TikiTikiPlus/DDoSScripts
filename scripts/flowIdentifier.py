@@ -1,4 +1,4 @@
-import os, time, csv
+import os, time, csv, sys
 class Packet:
     def __init__(self, timeStamp, protocol, src_add, src_port, dst_add, dst_port, bytes, TTL):
         self.timeStamp = timeStamp
@@ -24,13 +24,12 @@ flowRecords=[]
 flows=[]
 packetArray=[]
 timestampDifference=0
-def main():
-    basePath = os.getcwd()
-    file = basePath + "\\..\\DDoSAttackData\\MPH.txt"
+
+def main(inputFile, outputFile):
     matched=False
     try:
         packet=""
-        with open(file, "r") as f:
+        with open(inputFile, "r") as f:
             lines = f.readlines()
             lineNumber = 0
             for line in lines:
@@ -64,7 +63,7 @@ def main():
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
-        textFile = open(basePath + "/onlyFlows.txt", 'w')  
+        textFile = open(outputFile, 'w')  
         header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
         textFile.write(header)
         attackArray = []
@@ -102,5 +101,10 @@ def main():
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 if __name__ == '__main__':
-    main()
+    for i, arg in enumerate(sys.argv):
+        if arg == '-i':
+            input_file = sys.argv[i+1]
+        elif arg == '-o':
+            output_file = sys.argv[i+1]
+    main(input_file, output_file)
 
