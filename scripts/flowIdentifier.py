@@ -10,7 +10,7 @@ class Packet:
         self.bytes=bytes
         self.TTL=TTL
 class Flow:
-    def __init__(self,startTime, finalTime, ip_dst, port_dst, protocol,byteSize, packetCount, attack):
+    def __init__(self,startTime, finalTime, ip_dst, port_dst, protocol,byteSize, packetCount, attack, packet):
         self.timeStart = startTime
         self.finalTime = finalTime
         self.ip_dst = ip_dst
@@ -19,13 +19,15 @@ class Flow:
         self.byteSize=byteSize
         self.packetCount=packetCount
         self.attack = attack
+        self.packetArray=[]
+        self.packetArray.append(packet)
 flowRecords=[]
 flows=[]
 packetArray=[]
 timestampDifference=0
 def main():
     basePath = os.getcwd()
-    file = "/home/ro68/Downloads/MPH/DDoSAttackData/MPH.txt"
+    file = basePath + "\\..\\DDoSAttackData\\MPH.txt"
     matched=False
     try:
         packet=""
@@ -43,7 +45,7 @@ def main():
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
                     if len(flows)>0:
                         #check if packets have the same values as the flow records
-                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False)
+                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False, packet)
                         len(flows)
                         #Check for the flowrecords
                         for flow in flows:
@@ -51,6 +53,7 @@ def main():
                                 matched = True
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
+                                flow.packetArray.append(packet)
                                 if flow.packetCount == 5:
                                     flow.attack=True
                                 break
@@ -58,7 +61,7 @@ def main():
                             print(matched)
                             flows.append(flow1)
                     else:
-                        flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False)
+                        flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False, packet)
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
