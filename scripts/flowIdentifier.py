@@ -67,6 +67,10 @@ def main():
         textFile = open(basePath + "/onlyFlows.txt", 'w')  
         header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count \n"
         textFile.write(header)
+        attackArray = []
+        attackCount = 0
+        previousLine = ""
+        previousFlow=""
         for flow in flows:
             if(flow.attack==True):
                 if(flow.port_dst=="19"):
@@ -77,20 +81,26 @@ def main():
                     flow.port_dst="DNS"
                 elif(flow.port_dst=="17"):
                     flow.port_dst="QOTD"
+                flow.timeStart=int(int(flow.timeStart)/1000000)
+                flow.finalTime=int(int(flow.finalTime)/1000000)
                 data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+" \n"
                 textFile.write(data)
-                
+                if str(previousFlow) == str(flow.ip_source):
+                    continue
+                else:
+                    attackCount+=1
+                previousFlow=flow.ip_source
+
             # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
             # writer.writerow(packetHeader)
             # for packet in  flow.packetArray:
             #     writer.writerow([packet.timeStamp, packet.protocol, packet.source_address , packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
- 
+        textFile.write("Attack Count: " + str(attackCount))
         textFile.close()
 
                     
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
 if __name__ == '__main__':
     main()
 
