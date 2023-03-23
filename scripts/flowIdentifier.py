@@ -45,15 +45,15 @@ def main():
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
                     if len(flows)>0:
                         #check if packets have the same values as the flow records
-                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False, packet)
+                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,1, False, packet)
                         len(flows)
                         #Check for the flowrecords
                         for flow in flows:
-                            if (((int(flow.timeStart) + 60000)) > int(flow1.timeStart)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol) and (flow1.byteSize == flow.byteSize):
+                            if (((int(flow.timeStart) + 60000000)) > int(flow1.timeStart)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                                 matched = True
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
-                                flow.byteSize+=flow1.byteSize
+                                flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
                                 flow.packetArray.append(packet)
                                 if flow.packetCount == 5:
                                     flow.attack=True
@@ -68,7 +68,8 @@ def main():
         csvFile = open(basePath + "/MPH.csv", 'w', newline='')  
         writer = csv.writer(csvFile)
         for flow in flows:
-            data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.port_dst, flow.protocol, flow.byteSize, flow.packetCount, flow.attack]
+            print("hello")
+            data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.protocol, flow.port_dst, flow.byteSize, flow.packetCount, flow.attack]
             writer.writerow(data)
             for packet in  flow.packetArray:
                 writer.writerow([packet.timeStamp, packet.protocol, packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
