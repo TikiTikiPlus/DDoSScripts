@@ -53,6 +53,7 @@ def main():
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
                                 flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
+
                                 if flow.packetCount == 5:
                                     flow.attack=True
                                 break
@@ -64,10 +65,18 @@ def main():
                         
                     #check for the same dst ip addresses
         textFile = open(basePath + "/onlyFlows.txt", 'w')  
-        header="# Start time|End time|Protocol|Victim IP|Destination IP|Amplifier Protocol|Destination Port|Byte size|Packet count \n"
+        header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count \n"
         textFile.write(header)
         for flow in flows:
             if(flow.attack==True):
+                if(flow.port_dst=="19"):
+                    flow.port_dst="NTP"
+                elif(flow.port_dst=="11211"):
+                    flow.port_dst="CHARGEN"
+                elif(flow.port_dst=="53"):
+                    flow.port_dst="DNS"
+                elif(flow.port_dst=="17"):
+                    flow.port_dst="QOTD"
                 data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+" \n"
                 textFile.write(data)
                 
