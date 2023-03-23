@@ -49,7 +49,7 @@ def main():
                         len(flows)
                         #Check for the flowrecords
                         for flow in flows:
-                            if (((int(flow.timeStart) + 60000000)) > int(flow1.timeStart)) and (flow1.port_src == flow.port_src) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
+                            if (((int(flow.finalTime) + 60000000)) > int(flow1.timeStart)) and (flow1.port_src == flow.port_src) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                                 matched = True
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
@@ -65,12 +65,12 @@ def main():
                         
                     #check for the same dst ip addresses
         textFile = open(basePath + "/onlyFlows.txt", 'w')  
-        header="Start time|End time|Protocol|Source IP|Destination IP|Source Port|Destination Port|Byte size|Packet count|Attack \n"
+        header="# Start time|End time|Protocol|Source IP|Destination IP|Source Port|Destination Port|Byte size|Packet count|Attack \n"
         textFile.write(header)
         for flow in flows:
-
-            data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source)+"|"+str(flow.port_src) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+"|"+ str(flow.byteSize)+"|"+ str(flow.packetCount) +"|"+ str(flow.attack) + "\n"
-            textFile.write(data)
+            if(flow.attack==True):
+                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source)+"|"+str(flow.port_src) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+"|"+ str(flow.byteSize)+"|"+ str(flow.packetCount) +"|"+ str(flow.attack) + "\n"
+                textFile.write(data)
             # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
             # writer.writerow(packetHeader)
             # for packet in  flow.packetArray:
