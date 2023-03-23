@@ -58,10 +58,10 @@ def main():
                                     flow.attack=True
                                 break
                         if matched == False:
-                            flows.insert(0,flow1)
+                            flows.append(flow1)
                     else:
                         flow = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 1, False)
-                        flows.insert(0,flow)
+                        flows.append(flow)
                         
                     #check for the same dst ip addresses
         textFile = open(basePath + "/onlyFlows.txt", 'w')  
