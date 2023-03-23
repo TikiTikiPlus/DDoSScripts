@@ -1,4 +1,4 @@
-import os, time
+import os, time, csv
 class Packet:
     def __init__(self, timeStamp, protocol, src_add, src_port, dst_add, dst_port, bytes, TTL):
         self.timeStamp = timeStamp
@@ -10,8 +10,9 @@ class Packet:
         self.bytes=bytes
         self.TTL=TTL
 class Flow:
-    def __init__(self,timestamp, ip_dst, port_dst, protocol,byteSize, packetCount, attack):
-        self.timestamp = timestamp
+    def __init__(self,startTime, finalTime, ip_dst, port_dst, protocol,byteSize, packetCount, attack):
+        self.timeStart = startTime
+        self.finalTime = finalTime
         self.ip_dst = ip_dst
         self.port_dst = port_dst
         self.protocol = protocol
@@ -25,6 +26,7 @@ lts = 0
 packetArray=[]
 timestampDifference=0
 def main():
+    basePath = os.getcwd()
     file = "/home/ro68/Downloads/MPH/DDoSAttackData/MPH.txt"
     matched=False
     try:
@@ -43,12 +45,13 @@ def main():
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
                     if len(flows)>0:
                         #check if packets have the same values as the flow records
-                        flow1 = Flow(packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False)
+                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,0 , False)
                         len(flows)
                         #Check for the flowrecords
                         for flow in flows:
-                            if (((int(flow.timestamp) + 60000)) > int(flow1.timestamp)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol) and (flow1.byteSize == flow.byteSize):
+                            if (((int(flow.timeStart) + 60000)) > int(flow1.timeStart)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol) and (flow1.byteSize == flow.byteSize):
                                 matched = True
+                                flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
                                 if flow.packetCount == 5:
                                     flow.attack=True
@@ -57,12 +60,16 @@ def main():
                             print(matched)
                             flows.append(flow1)
                     else:
-                        flow = Flow(packet.timeStamp,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False)
+                        flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False)
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
+        csvFile = open(basePath + "/MPH.csv", 'w', newline='')  
+        writer = csv.writer(csvFile)
         for flow in flows:
             print(str(flow.ip_dst) + " " + str(flow.port_dst) + " " + str(flow.protocol) + " " + str(flow.byteSize) + " " + str(flow.packetCount) +  " " +str(flow.attack))
+            writer.writerow(flow)
+        csvFile.close()
 
                     
     except Exception as e:
