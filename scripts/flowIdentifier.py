@@ -53,12 +53,12 @@ def main():
                                 matched = True
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
+                                flow.byteSize+=flow1.byteSize
                                 flow.packetArray.append(packet)
                                 if flow.packetCount == 5:
                                     flow.attack=True
                                 break
                         if matched == False:
-                            print(matched)
                             flows.append(flow1)
                     else:
                         flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False, packet)
@@ -70,6 +70,9 @@ def main():
         for flow in flows:
             data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.port_dst, flow.protocol, flow.byteSize, flow.packetCount, flow.attack]
             writer.writerow(data)
+            for packet in  flow.packetArray:
+                writer.writerow([packet.timeStamp, packet.protocol, packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
+ 
         csvFile.close()
 
                     
