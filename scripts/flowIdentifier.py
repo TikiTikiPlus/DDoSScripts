@@ -54,25 +54,29 @@ def main():
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
                                 flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
-                                flow.packetArray.append(packet)
+
+                                flow.packetArray.insert(0,packet)
                                 if flow.packetCount == 5:
                                     flow.attack=True
                                 break
                         if matched == False:
-                            flows.append(flow1)
+                            flows.insert(0,flow1)
                     else:
                         flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False, packet)
-                        flows.append(flow)
+                        flows.insert(0,flow)
                         
                     #check for the same dst ip addresses
         csvFile = open(basePath + "/MPH.csv", 'w', newline='')  
         writer = csv.writer(csvFile)
         for flow in flows:
-            print("hello")
+            header=["Start time", "End time", "Destination IP", "Protocol", "Destination Port", "Byte size", "Packet count", "Attack"]
+            writer.writerow(header)
             data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.protocol, flow.port_dst, flow.byteSize, flow.packetCount, flow.attack]
             writer.writerow(data)
+            packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
+            writer.writerow(packetHeader)
             for packet in  flow.packetArray:
-                writer.writerow([packet.timeStamp, packet.protocol, packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
+                writer.writerow([packet.timeStamp, packet.protocol, packet.source_address , packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
  
         csvFile.close()
 
