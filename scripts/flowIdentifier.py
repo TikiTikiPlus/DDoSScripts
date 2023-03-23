@@ -68,7 +68,7 @@ def main():
         header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
         textFile.write(header)
         attackArray = []
-        attackCount = 1
+        attackCount = 0
         previousLine = ""
         previousFlow=""
         for flow in flows:
@@ -83,12 +83,13 @@ def main():
                     flow.port_dst="QOTD"
                 flow.timeStart=int(int(flow.timeStart)/1000000)
                 flow.finalTime=int(int(flow.finalTime)/1000000)
-                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(attackCount) + " \n"
-                textFile.write(data)
                 if str(previousFlow) == str(flow.ip_source):
-                    continue
+                    attackCount=attackCount
                 else:
                     attackCount+=1
+                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(attackCount) + " \n"
+                textFile.write(data)
+                
                 previousFlow=flow.ip_source
 
             # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
