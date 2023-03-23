@@ -21,8 +21,6 @@ class Flow:
         self.attack = attack
 flowRecords=[]
 flows=[]
-fts = 0
-lts = 0
 packetArray=[]
 timestampDifference=0
 def main():
@@ -67,8 +65,8 @@ def main():
         csvFile = open(basePath + "/MPH.csv", 'w', newline='')  
         writer = csv.writer(csvFile)
         for flow in flows:
-            print(str(flow.ip_dst) + " " + str(flow.port_dst) + " " + str(flow.protocol) + " " + str(flow.byteSize) + " " + str(flow.packetCount) +  " " +str(flow.attack))
-            writer.writerow(flow)
+            data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.port_dst, flow.protocol, flow.byteSize, flow.packetCount, flow.attack]
+            writer.writerow(data)
         csvFile.close()
 
                     
