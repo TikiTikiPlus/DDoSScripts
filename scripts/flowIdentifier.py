@@ -10,17 +10,17 @@ class Packet:
         self.bytes=bytes
         self.TTL=TTL
 class Flow:
-    def __init__(self,startTime, finalTime, ip_dst, port_dst, protocol,byteSize, packetCount, attack, packet):
+    def __init__(self,startTime, finalTime, ip_source, port_src, ip_dst, port_dst, protocol,byteSize, packetCount, attack):
         self.timeStart = startTime
         self.finalTime = finalTime
+        self.ip_source = ip_source
+        self.port_src = port_src
         self.ip_dst = ip_dst
         self.port_dst = port_dst
         self.protocol = protocol
         self.byteSize=byteSize
         self.packetCount=packetCount
         self.attack = attack
-        self.packetArray=[]
-        self.packetArray.append(packet)
 flowRecords=[]
 flows=[]
 packetArray=[]
@@ -45,40 +45,38 @@ def main():
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
                     if len(flows)>0:
                         #check if packets have the same values as the flow records
-                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes,1, False, packet)
+                        flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.source_address, packet.source_port,packet.destination_add,  packet.destination_port, packet.protocol, packet.bytes,1, False)
                         len(flows)
                         #Check for the flowrecords
                         for flow in flows:
-                            if (((int(flow.timeStart) + 60000000)) > int(flow1.timeStart)) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
+                            if (((int(flow.timeStart) + 60000000)) > int(flow1.timeStart)) and (flow1.port_src == flow.port_src) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                                 matched = True
                                 flow.finalTime = flow1.timeStart
                                 flow.packetCount+=1
                                 flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
-
-                                flow.packetArray.insert(0,packet)
                                 if flow.packetCount == 5:
                                     flow.attack=True
                                 break
                         if matched == False:
                             flows.insert(0,flow1)
                     else:
-                        flow = Flow(packet.timeStamp, packet.timeStamp, packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 0, False, packet)
+                        flow = Flow(packet.timeStamp, packet.timeStamp, packet.source_address, packet.source_port,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 1, False)
                         flows.insert(0,flow)
                         
                     #check for the same dst ip addresses
-        csvFile = open(basePath + "/MPH.csv", 'w', newline='')  
-        writer = csv.writer(csvFile)
+        textFile = open(basePath + "/onlyFlows.txt", 'w')  
+        header="Start time|End time|Protocol|Source IP|Destination IP|Source Port|Destination Port|Byte size|Packet count|Attack \n"
+        textFile.write(header)
         for flow in flows:
-            header=["Start time", "End time", "Destination IP", "Protocol", "Destination Port", "Byte size", "Packet count", "Attack"]
-            writer.writerow(header)
-            data = [flow.timeStart, flow.finalTime, flow.ip_dst, flow.protocol, flow.port_dst, flow.byteSize, flow.packetCount, flow.attack]
-            writer.writerow(data)
-            packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
-            writer.writerow(packetHeader)
-            for packet in  flow.packetArray:
-                writer.writerow([packet.timeStamp, packet.protocol, packet.source_address , packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
+
+            data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source)+"|"+str(flow.port_src) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+"|"+ str(flow.byteSize)+"|"+ str(flow.packetCount) +"|"+ str(flow.attack) + "\n"
+            textFile.write(data)
+            # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
+            # writer.writerow(packetHeader)
+            # for packet in  flow.packetArray:
+            #     writer.writerow([packet.timeStamp, packet.protocol, packet.source_address , packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
  
-        csvFile.close()
+        textFile.close()
 
                     
     except Exception as e:
