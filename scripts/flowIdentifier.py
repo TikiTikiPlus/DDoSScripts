@@ -38,7 +38,7 @@ def main(inputFile, outputFile):
                 print(str(lineNumber) + " out of " + str(len(lines)))
                 line=line.replace('\n','')
                 line = line.split('|')
-                if len(line) == 8 and '#' not in line[0]:
+                if '#' not in line[0]:
                     matched = False
                     #store a value into an array
                     packet=Packet(line[0],line[1],line[2],line[3],line[4],line[5],line[6],line[7])
