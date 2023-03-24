@@ -20,6 +20,7 @@ class Flow:
         self.byteSize=byteSize
         self.packetCount=packetCount
         self.attack = attack
+        self.attackCount = 0
 flowRecords=[]
 flows=[]
 packetArray=[]
@@ -54,23 +55,24 @@ def main(inputFile, outputFile):
                                 flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
                                 if flow.packetCount == 5:
                                     flow.attack=True
+                                flow.attackCount=1
                                 break
                         if matched == False:
                             flows.append(flow1)
                     else:
                         flow = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 1, False)
+                        flow.attackCount=1
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
         textFile = open(outputFile, 'w')  
+        
+        flowAppend=[]
         header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
         textFile.write(header)
-        attackArray = []
-        attackCount = 0
-        previousLine = ""
-        previousFlow=""
         for flow in flows:
             if(flow.attack==True):
+                print(len(flowAppend))
                 if(flow.port_dst=="19"):
                     flow.port_dst="NTP"
                 elif(flow.port_dst=="11211"):
@@ -81,24 +83,38 @@ def main(inputFile, outputFile):
                     flow.port_dst="QOTD"
                 flow.timeStart=int(int(flow.timeStart)/1000000)
                 flow.finalTime=int(int(flow.finalTime)/1000000)
-                if str(previousFlow) == str(flow.ip_source):
-                    attackCount=attackCount
-                else:
-                    attackCount+=1
-                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(attackCount) + " \n"
-                textFile.write(data)
-                
-                previousFlow=flow.ip_source
+                highestAttack = flow.attackCount
+                if len(flowAppend)>0:
 
+                    for attack in flowAppend:
+                        print(str(flow.ip_source) + " " +str(attack.ip_source))
+                        #Check the highest attack
+                        if attack.attackCount >= highestAttack:
+                            highestAttack=attack.attackCount
+                        if str(flow.ip_source)==str(attack.ip_source) and int(int(attack.finalTime)+60)>int(flow.timeStart):
+                            matched=True
+                            flow.attackCount=attack.attackCount
+                    if matched==False:
+                        highestAttack+=1
+                        flow.attackCount=highestAttack
+                
+                
+                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackCount) + " \n"
+                textFile.write(data)
+                matched=False
+                flowAppend.append(flow)
+        
+        textFile.close()
             # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
             # writer.writerow(packetHeader)
             # for packet in  flow.packetArray:
             #     writer.writerow([packet.timeStamp, packet.protocol, packet.source_address , packet.source_port, packet.destination_add, packet.destination_port, packet.bytes, packet.TTL])
-        textFile.close()
 
-                    
+
+                            
     except Exception as e:
         print(f"An error occurred: {str(e)}")
+
 if __name__ == '__main__':
     for i, arg in enumerate(sys.argv):
         if arg == '-i':
