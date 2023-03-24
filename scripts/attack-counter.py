@@ -20,11 +20,12 @@ class Flow:
         self.byteSize=byteSize
         self.packetCount=packetCount
         self.attack = attack
+        self.attackID=1
 flowRecords=[]
 flows=[]
 packetArray=[]
 timestampDifference=0
-
+flowAppend=[]
 def main(inputFile, outputFile):
     matched=False
     try:
@@ -89,10 +90,24 @@ def main(inputFile, outputFile):
                     attackCount=attackCount
                 else:
                     attackCount+=1
-                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(attackCount) + " \n"
+                highestAttack = flow.attackID
+                if len(flowAppend)>0:
+                    for attack in flowAppend:
+                        print(str(flow.ip_source) + " " +str(attack.ip_source))
+                        #Check the highest attack
+                        if attack.attackID >= highestAttack:
+                            highestAttack=attack.attackID
+                        if str(flow.ip_source)==str(attack.ip_source) and int(int(attack.finalTime)+60)>int(flow.timeStart):
+                            matched=True
+                            flow.attackID=attack.attackID
+                    if matched==False:
+                        highestAttack+=1
+                        flow.attackID=highestAttack
+                            
+                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackID) + " \n"
                 textFile.write(data)
-                
-                previousFlow=flow.ip_source
+                matched=False
+                flowAppend.append(flow)
 
             # packetHeader=["Timestamp", "Protocol", "Source IP","Source port", "Destination IP", "Destination Port", "Bytes", "TTL"]
             # writer.writerow(packetHeader)
