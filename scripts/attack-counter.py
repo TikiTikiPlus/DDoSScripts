@@ -93,7 +93,6 @@ def main(inputFile, outputFile):
                 highestAttack = flow.attackID
                 if len(flowAppend)>0:
                     for attack in flowAppend:
-                        print(str(flow.ip_source) + " " +str(attack.ip_source))
                         #Check the highest attack
                         if attack.attackID >= highestAttack:
                             highestAttack=attack.attackID

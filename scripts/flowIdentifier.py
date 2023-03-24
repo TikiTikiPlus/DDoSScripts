@@ -35,7 +35,6 @@ def main(inputFile, outputFile):
             lineNumber = 0
             for line in lines:
                 lineNumber+=1
-                print(str(lineNumber) + " out of " + str(len(lines)))
                 line=line.replace('\n','')
                 line = line.split('|')
                 if '#' not in line[0]:
@@ -72,7 +71,6 @@ def main(inputFile, outputFile):
         textFile.write(header)
         for flow in flows:
             if(flow.attack==True):
-                print(len(flowAppend))
                 if(flow.port_dst=="19"):
                     flow.port_dst="NTP"
                 elif(flow.port_dst=="11211"):
@@ -87,7 +85,6 @@ def main(inputFile, outputFile):
                 if len(flowAppend)>0:
 
                     for attack in flowAppend:
-                        print(str(flow.ip_source) + " " +str(attack.ip_source))
                         #Check the highest attack
                         if attack.attackCount >= highestAttack:
                             highestAttack=attack.attackCount
