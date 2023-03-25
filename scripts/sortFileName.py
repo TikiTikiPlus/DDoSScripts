@@ -5,9 +5,4 @@ if os.path.isdir(folder):
     files.sort(key=lambda x: (x.split('.')[0]))
     concatenatedFiles=""
     for file in files:
-
-        if os.path.isfile(folder+"\\"+file): 
-            concatenatedFiles = concatenatedFiles + folder + "\\"+file + " " 
-        
-    print(concatenatedFiles)
-    os.system("cat " + concatenatedFiles)
+        os.system("cat " + folder + "\\" + file + "| python attack-counter.py >> test.txt" )

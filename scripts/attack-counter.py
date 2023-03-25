@@ -27,7 +27,7 @@ packetArray=[]
 timestampDifference=0
 flowAppend=[]
 def main(pipedInput):
-    
+
     matched=False
     try:
         packet=""
@@ -67,11 +67,9 @@ def main(pipedInput):
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
-        header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
-        print(header)
-        attackArray = []
-        attackCount = 0
-        previousFlow=""
+        if os.path.isfile("test.txt"):
+            header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
+            print(header.rstrip())
         for flow in flows:
             if(flow.attack==True):
                 if(flow.port_dst=="19"):
@@ -84,10 +82,6 @@ def main(pipedInput):
                     flow.port_dst="QOTD"
                 flow.timeStart=int(int(flow.timeStart)/1000000)
                 flow.finalTime=int(int(flow.finalTime)/1000000)
-                if str(previousFlow) == str(flow.ip_source):
-                    attackCount=attackCount
-                else:
-                    attackCount+=1
                 highestAttack = flow.attackID
                 if len(flowAppend)>0:
                     for attack in flowAppend:
