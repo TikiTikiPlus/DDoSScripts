@@ -22,23 +22,23 @@ class Flow:
         self.attack = attack
         self.attackID=1
 flowRecords=[]
-flows=[]
+flows=list()
 packetArray=[]
 timestampDifference=0
-flowAppend=[]
-def main():
+Attacks=[]
+def main(input):
 
     matched=False
     try:
         packet=""
         # for line in lines:
         # with open("output.txt") as fp:
-        for line in sys.stdin:
+        for line in input:
             #lineNumber+=1
             # if lineNumber % 1000 == 0:  
             #    print(str(lineNumber/1000) + "k out of " + str(len(lines)/1000) + "k")
             if line[0] == '#':
-                if len(flows>0):
+                if len(flows)>0:
                     for flow in flows:
                         if(flow.attack==True):
                             if(flow.port_dst=="19"):
@@ -52,8 +52,8 @@ def main():
                             flow.timeStart=int(int(flow.timeStart)/1000000)
                             flow.finalTime=int(int(flow.finalTime)/1000000)
                             highestAttack = flow.attackID
-                            if len(flowAppend)>0:
-                                for attack in flowAppend:
+                            if len(Attacks)>0:
+                                for attack in Attacks:
                                     #Check the highest attack
                                     if attack.attackID >= highestAttack:
                                         highestAttack=attack.attackID
@@ -64,20 +64,21 @@ def main():
                                     highestAttack+=1
                                     flow.attackID=highestAttack
                                         
-                            data = str(flow.timeStart).join("|").join(str(flow.finalTime)).join("|").join(str(flow.protocol)).join("|").join(str(flow.ip_source)).join("|").join(str(flow.ip_dst)).join("|").join(str(flow.port_dst)).join("|").join(str(flow.byteSize)).join("|").join(str(flow.packetCount)).join("|").join(str(flow.attackID)).join(" \n")
+                            data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackID) + " \n"
                             print(data.rstrip())
                             matched=False
+                            Attacks.append(flow)
+                flows.clear()
                 continue
             line=line.replace('\n','')
             tokens = line.split('|')
             if len(tokens) < 9:
                 matched = False
                 #store a value into an array
-                packet=Packet(*tokens)
+                packet=Packet(tokens[0],tokens[1],tokens[2],tokens[3],tokens[4],tokens[5],tokens[6],tokens[7])
                 if len(flows)>0:
                     #check if packets have the same values as the flow records
                     flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add,  packet.destination_port, packet.protocol, packet.bytes,1, False)
-                    len(flows)
 
                     #Check for the flowrecords
                     for flow in flows:
@@ -117,5 +118,5 @@ if __name__ == '__main__':
     #         input_file = sys.argv[i+1]
     #     elif arg == '-o':
     #         output_file = sys.argv[i+1]
-    main()
+    main(sys.stdin)
 
