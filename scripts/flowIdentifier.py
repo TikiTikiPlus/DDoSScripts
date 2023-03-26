@@ -1,4 +1,5 @@
 import os, time, csv, sys, math, collections
+import numpy as np
 from collections import deque
 class Packet:
     def __init__(self, timeStamp, protocol, src_add, src_port, dst_add, dst_port, bytes, TTL):
@@ -86,9 +87,6 @@ def main():
                     flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add,  packet.destination_port, packet.protocol, packet.bytes,1, False)
                     #Check for the flowrecords
                     for flow in flows:
-                        # if flow.finalTime+60 < flow1.timeStart:
-                        #     flows.remove(flow)
-                        #     continue
                             
                         if (((int(flow.finalTime) + 60)) > int(flow1.timeStart)) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                             matched = True
@@ -97,9 +95,12 @@ def main():
                             flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
                             if flow.packetCount == 5:
                                 flow.attack=True
-                            flows.remove(flow)
-                            flows.appendleft(flow)
                             break
+                        if flow.finalTime+60 < flow1.timeStart:
+                            previousFlow=flow
+                            flows.remove(flow)
+                            flows.append(previousFlow)
+                            # flows.append(flow)
                     if matched == False:
                         flows.append(flow1)
                 else:
@@ -125,6 +126,7 @@ def main():
     except Exception as e:
 
         print(f"An error occurred: {str(e)}")
+
 def attackFlow(flows):
     for flow in flows:
         if(flow.attack==True):
