@@ -1,4 +1,5 @@
-import os, time, csv, sys, math
+import os, time, csv, sys, math, collections
+from collections import deque
 class Packet:
     def __init__(self, timeStamp, protocol, src_add, src_port, dst_add, dst_port, bytes, TTL):
         self.timeStamp = timeStamp
@@ -22,7 +23,8 @@ class Flow:
         self.attack = attack
         self.attackID=1
 flowRecords=[]
-flows=list()
+flows=deque()
+# inactiveflows=deque()
 packetArray=[]
 timestampDifference=0
 Attacks=[]
@@ -84,52 +86,26 @@ def main():
                     flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add,  packet.destination_port, packet.protocol, packet.bytes,1, False)
                     #Check for the flowrecords
                     for flow in flows:
+                        # if flow.finalTime+60 < flow1.timeStart:
+                        #     flows.remove(flow)
+                        #     continue
+                            
                         if (((int(flow.finalTime) + 60)) > int(flow1.timeStart)) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                             matched = True
                             flow.finalTime = flow1.timeStart
                             flow.packetCount+=1
                             flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
-
                             if flow.packetCount == 5:
                                 flow.attack=True
+                            flows.remove(flow)
+                            flows.appendleft(flow)
                             break
                     if matched == False:
                         flows.append(flow1)
                 else:
                     flow = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add, packet.destination_port, packet.protocol, packet.bytes, 1, False)
                     flows.append(flow)
-        for flow in flows:
-            if(flow.attack==True):
-                if(flow.port_dst=="19"):
-                    flow.port_dst="NTP"
-                elif(flow.port_dst=="11211"):
-                    flow.port_dst="CHARGEN"
-                elif(flow.port_dst=="53"):
-                    flow.port_dst="DNS"
-                elif(flow.port_dst=="17"):
-                    flow.port_dst="QOTD"
-                highestAttack = flow.attackID
-                if highestAttack >= biggestAttack:
-                    biggestAttack = highestAttack
-                else:
-                    highestAttack = biggestAttack
-                if len(Attacks)>0:
-                    for attack in Attacks:
-                        #Check the highest attack
-                        if attack.attackID >= highestAttack:
-                            highestAttack=attack.attackID
-                        if str(flow.ip_source)==str(attack.ip_source) and int(int(attack.finalTime)+60)>int(flow.timeStart):
-                            matched=True
-                            flow.attackID=attack.attackID
-                    if matched==False:
-                        if biggestAttack >= highestAttack:
-                            highestAttack = biggestAttack
-                        highestAttack+=1
-                        flow.attackID=highestAttack            
-                data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackID) + " \n"
-                print(data.rstrip())
-                matched=False
-                Attacks.append(flow)
+        attackFlow(flows)    
             # print("# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n")
             # for flow in flows:
             #     print(str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackID) + " \n")
@@ -147,7 +123,42 @@ def main():
 
                     
     except Exception as e:
+
         print(f"An error occurred: {str(e)}")
+def attackFlow(flows):
+    for flow in flows:
+        if(flow.attack==True):
+            if(flow.port_dst=="19"):
+                flow.port_dst="NTP"
+            elif(flow.port_dst=="11211"):
+                flow.port_dst="CHARGEN"
+            elif(flow.port_dst=="53"):
+                flow.port_dst="DNS"
+            elif(flow.port_dst=="17"):
+                flow.port_dst="QOTD"
+            highestAttack = flow.attackID
+            # if highestAttack >= biggestAttack:
+            #     biggestAttack = highestAttack
+            # else:
+            #     highestAttack = biggestAttack
+            if len(Attacks)>0:
+                for attack in Attacks:
+                    #Check the highest attack
+                    if attack.attackID >= highestAttack:
+                        highestAttack=attack.attackID
+                    if str(flow.ip_source)==str(attack.ip_source) and int(int(attack.finalTime)+60)>int(flow.timeStart):
+                        matched=True
+                        flow.attackID=attack.attackID
+                if matched==False:
+                    # if biggestAttack >= highestAttack:
+                    #     highestAttack = biggestAttack
+                    highestAttack+=1
+                    flow.attackID=highestAttack            
+            data = str(flow.timeStart)+"|"+ str(flow.finalTime)+"|"+str(flow.protocol)+"|"+ str(flow.ip_source) +"|"+ str(flow.ip_dst)+"|"+ str(flow.port_dst)+ "|"+str(flow.byteSize)+ "|"+ str(flow.packetCount)+ "|"+ str(flow.attackID) + " \n"
+            print(data.rstrip())
+            matched=False
+            Attacks.append(flow)
+
 if __name__ == '__main__':
     # for i, arg in enumerate(sys.argv):
     #     if arg == '-i':
