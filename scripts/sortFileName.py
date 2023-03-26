@@ -5,3 +5,4 @@ if os.path.isdir(folder):
     files.sort(key=lambda x: (x.split('.')[0]))
     for file in files:
         os.system("cat " + folder + "\\" + file + ">> test.txt")
+    
