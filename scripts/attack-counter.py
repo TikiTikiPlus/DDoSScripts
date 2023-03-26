@@ -31,9 +31,11 @@ def main(pipedInput):
     matched=False
     try:
         packet=""
-        lines = pipedInput
+        #lines = pipedInput
         lineNumber = 0
-        for line in lines:
+        # for line in lines:
+        with open("output.txt") as fp:
+            for line in fp:
                 lineNumber+=1
                 # if lineNumber % 1000 == 0:  
                 #    print(str(lineNumber/1000) + "k out of " + str(len(lines)/1000) + "k")
@@ -67,7 +69,7 @@ def main(pipedInput):
                         flows.append(flow)
                         
                     #check for the same dst ip addresses
-        if os.path.isfile("test.txt"):
+        if os.path.isfile("output.txt"):
             header="# Start time|End time|Protocol|Victim IP|HoneyPot IP|Amplifier Protocol|Byte size|Packet count|Attack Count \n"
             print(header.rstrip())
         for flow in flows:
