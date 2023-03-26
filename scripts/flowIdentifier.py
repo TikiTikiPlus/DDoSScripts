@@ -96,10 +96,6 @@ def main():
                             if flow.packetCount == 5:
                                 flow.attack=True
                             break
-                        if flow.finalTime+60 < flow1.timeStart:
-                            previousFlow=flow
-                            flows.remove(flow)
-                            flows.append(previousFlow)
                             # flows.append(flow)
                     if matched == False:
                         flows.append(flow1)
