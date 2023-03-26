@@ -48,10 +48,11 @@ def main(input, biggestAttack):
                 if len(flows)>0:
                     #check if packets have the same values as the flow records
                     flow1 = Flow(packet.timeStamp, packet.timeStamp, packet.source_address,packet.destination_add,  packet.destination_port, packet.protocol, packet.bytes,1, False)
-
+                    flow.timeStart=int(int(flow.timeStart)/1000000)
+                    flow.finalTime=int(int(flow.finalTime)/1000000)
                     #Check for the flowrecords
                     for flow in flows:
-                        if (((int(flow.finalTime) + 60000000)) > int(flow1.timeStart)) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
+                        if (((int(flow.finalTime) + 60)) > int(flow1.timeStart)) and (flow1.ip_source == flow.ip_source) and (flow1.ip_dst == flow.ip_dst) and (flow1.port_dst == flow.port_dst) and (flow.protocol == flow1.protocol):
                             matched = True
                             flow.finalTime = flow1.timeStart
                             flow.packetCount+=1
@@ -74,8 +75,6 @@ def main(input, biggestAttack):
                                 flow.port_dst="DNS"
                             elif(flow.port_dst=="17"):
                                 flow.port_dst="QOTD"
-                            flow.timeStart=int(int(flow.timeStart)/1000000)
-                            flow.finalTime=int(int(flow.finalTime)/1000000)
                             highestAttack = flow.attackID
                             if highestAttack >= biggestAttack:
                                 biggestAttack = highestAttack
