@@ -1,0 +1,26 @@
+The PCAP files were converted using an internally developed tool.
+It is ultimately just using the "pypacker" Python library to conduct a
+conversion to a PSV (Pipe-Separated Values) format.
+
+The command necessary for the conversion was as follows (following Rav's user
+configuration and directory layout):
+```
+./main.py --splits 5000 -p HoneypotPackets -a SeparatedValues \
+	+ -s 2018-09-03 -e 2023-02-15 -t $((60 * 60)) --all-packets --microseconds \
+	+ -o /Scratch/rs266/MP-H/ --extra-fields 'TTL' --existing-file-action append \
+	--filename-change-comment --specify-timestamp-accuracy microseconds \
+	1> generation.stdout.log 2> generation.stderr.log
+```
+
+Each argument can be quickly explained through:
+`./main.py -h`
+`./main.py -p HoneypotPackets -a $VALID_OPTION + -h`
+`./main.py -p $VALID_OPTION -a SeparatedValues + + -h`
+Most data location defaults for arguments suit my user (rs266), so you will
+have to change their arguments.
+
+Note that some files were truncated for reasons unknown, so those PCAP files
+were parsed up to the truncation. Their files can be searched through the tool
+output "generation.stderr.log" ("generation.stdout.log" was empty so it was
+deleted).
+
