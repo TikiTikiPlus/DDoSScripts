@@ -1,0 +1,4 @@
+Finish the section for AMPPOT
+Clean up rate limiting
+Talk about DNS resolvers and NTP servers and why they are potent.
+Make different chapters/sections connect.

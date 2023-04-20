@@ -95,7 +95,10 @@ def main():
                             flow.byteSize= int(flow.byteSize)+int(flow1.byteSize)
                             if flow.packetCount == 5:
                                 flow.attack=True
+                            flows.append(flow)
+                            flows.remove(flow)
                             break
+                            
                             # flows.append(flow)
                     if matched == False:
                         flows.append(flow1)
