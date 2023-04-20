@@ -274,30 +274,15 @@ def worker_parser(
 
 #Chops down the log file further to work in parallel
 #once all the workers are finished, they are all merged into one file
-#This is a Python function called worker_counter that takes in several arguments and 
-# returns a tuple of AttackWindow objects. The purpose of this function is to read in and process a log 
-# file containing attack data, and to divide it into smaller chunks that can be processed in parallel to improve performance.
+# This is a function that takes in several parameters and reads log files from a given path. It divides the log data into smaller chunks and then processes them by calling the worker_parser function. The resulting AttackWindow objects returned by worker_parser are added to the windows list, which is then sorted by the time the attack has started. If the worker_parser function returns a window of attack, the single window is added to the windows list. Finally, the function returns a tuple of all the AttackWindow objects that were processed.
 
-# The function takes in the following arguments:
+# The log function is a nested function that simply prints messages to the standard error stream with a timestamp. This function is used to log progress and errors.
 
-#     start: A datetime object representing the start time of the attack window that we are interested in. This is inclusive.
-#     end: A datetime object representing the end time of the attack window that we are interested in. This is exclusive.
-#     attack_timeout: A timedelta object representing the maximum duration of an attack. Any attack that lasts longer than this is considered to have timed out and is ignored.
-#     window_start: A datetime object representing the start time of the current attack window that we are processing. This is used for logging purposes.
-#     file_path: A string representing the path to the log file that we want to read in and process.
+# The line_slices variable is a list of tuples, where each tuple contains the lines from a slice of the log file. The gzip module is used to read the compressed log file. Each slice is generated using the readlines() method, which reads the specified number of lines or reads the entire file if -1 is passed as the argument.
 
-# The function first reads in the log file and divides it into smaller slices, 
-# each containing a certain number of lines of the log file. It then processes each slice 
-# of the log file in parallel using a multiprocessing pool. Each slice is processed by a 
-# separate worker_parser function that takes in the same arguments as worker_counter and
-#  returns an AttackWindow object representing a single attack window that occurred within the slice.
+# The min() function is used to determine the number of processes to create in the multiprocessing pool. The number of processes created is the minimum of the number of slices and the number of CPU cores on the machine.
 
-# If the worker_parser function returns an AttackWindow object,
-#  it is added to a list of AttackWindow objects called windows.
-#  Once all slices have been processed, the windows list is sorted by the start time of the attack window, and then returned as a tuple.
-
-# The purpose of this function is to divide the log file into smaller chunks that can be processed in parallel to improve performance, 
-# while also ensuring that the attack data is processed in chronological order.
+# The AttackWindow objects returned by worker_parser are added to the windows list and sorted by the start time of the attack. The sorted list of windows is then returned as a tuple.
 def worker_counter(
     start: dt.datetime,  # Inclusive.
     end: dt.datetime,  # Exclusive.
@@ -313,8 +298,7 @@ def worker_counter(
             )
 
     line_slices: T.List[T.Tuple[str, ...]] = []
-    #makes the lines work in parallels. 
-    #Also limits the max size of the line array to be able to calculate without overloading the memory
+    #limits the size of lines
     with gzip.open(file_path, "rt") as file:
         log(f"Reading '{file_path}' into memory...")
         while True:
@@ -345,7 +329,6 @@ def worker_counter(
     #then sorted by the time the attack has started
     #if the worker_parser returns a window of attack, 
     #the single window is added to the windows list
-
     if len(line_slices) > 1:
         with mp.Pool(min(len(line_slices), os.cpu_count() or 4)) as pool:
             for window in pool.starmap(
@@ -369,26 +352,23 @@ def worker_counter(
     log("Finished.")
     return tuple(windows)
 
-# This code defines a function worker_merger that takes in three parameters: attack_timeout 
-# (a datetime.timedelta object), low (an AttackWindow object), and high (another AttackWindow object). 
-# It returns a new AttackWindow object that merges the attacks from low and high.
+# This is a Python function that takes in two AttackWindow objects (low and high) and merges them into a single AttackWindow object. An AttackWindow is a data structure that represents a window of time in which network attacks occurred. The function also performs some post-processing to resolve overlapped attacks within the merged window.
 
-# The function first checks if low.start is less than or equal to high.start. If it's not, an AssertionError is raised.
+# The function takes in three arguments:
 
-# Then, it creates a new AttackWindow object with the start time of low and the combined attacks of low and high. 
-# The attacks are sorted by their observed_first attribute.
+#     attack_timeout: a timedelta object representing the maximum amount of time that an attack can last before it is considered finished
+#     low: an AttackWindow object representing the lower half of the time window to be merged
+#     high: an AttackWindow object representing the upper half of the time window to be merged
 
-# The function then loops through the attacks in the new AttackWindow object. 
-# If an attack has an observed_last attribute (i.e., it's already finished), the function skips it. 
-# Otherwise, it looks for another attack that starts after the current attack and is more than attack_timeout away. 
-# If it finds such an attack, it sets the current attack's observed_last attribute to the start time of the future attack. 
-# This means the current attack is finished.
+# The function returns an AttackWindow object that represents the merged time window.
 
-# If there isn't a future attack that's far enough away, the function looks for another attack that has the same victim and amplification port 
-# as the current attack. If it finds such an attack, it merges the two attacks and removes the future attack from the list. 
-# This potentially finishes the current attack as well.
+# The function first checks that the low window starts before the high window. If not, it raises an AssertionError. Then, it creates a new AttackWindow object with the start time of the low window and the attacks from both windows combined. The attacks are sorted by their observed_first attribute.
 
-# After merging any overlapping attacks, the function sorts the attacks by their observed_first attribute and returns the new AttackWindow object.
+# The function then loops through each attack in the merged window. If an attack has an observed_last attribute, it is considered finished and the function moves on to the next attack. Otherwise, it looks at the next attack in the list and checks if it is part of the same attack as the current one (i.e., if it has the same victim and amplification_port attributes). If it is, the function extends the current attack by adding the bytes, packets, and sensors from the next attack to the current one. If the time between the observed_first attribute of the current attack and the next attack is greater than the attack_timeout, the current attack is considered finished. If the next attack extends the current attack, the next attack is removed from the list.
+
+# After merging attacks that belong together, the function then looks for overlapping attacks. It loops through each attack in the merged window again, but this time looking for attacks that overlap with the current attack. If an attack overlaps with the current one, the function merges the two attacks into a single attack. If the merged attack has an observed_last attribute, the function removes the overlapping attack from the list. If any overlapping attacks were merged, the function sorts the attacks again.
+
+# Finally, the function returns the merged AttackWindow object.
 def worker_merger(
     attack_timeout: dt.timedelta,
     low: AttackWindow,
@@ -411,12 +391,12 @@ def worker_merger(
     window.attacks.sort(key=lambda x: x.observed_first)  # Just to be sure.
 
     for index, attack in enumerate(window.attacks):
-        #because attack is not yet finished
         if attack.observed_last is not None:
             continue
         future_index = index + 1
         while future_index < len(window.attacks):
             future_attack = window.attacks[future_index]
+
             if (
                 future_attack.observed_first - attack.observed_first
                 > attack_timeout
@@ -425,6 +405,7 @@ def worker_merger(
                     attack, observed_last=future_attack.observed_first
                 )
                 break
+
             if (
                 future_attack.victim == attack.victim
                 and future_attack.amplification_port
@@ -507,34 +488,18 @@ def worker_merger(
         window.attacks.sort(key=lambda x: x.observed_first)
 
     return window
+# This is a Python function that tracks multi-protocol attacks. It takes as input a tuple of Attack objects and a timeout period, and returns a tuple of identities and counts. The Attack class seems to be defined elsewhere, but we can see that it has attributes such as observed_first, observed_last, victim, and amplification_port.
 
-# This is a function track_attack_multi_protocol that tracks multi-protocol attacks. 
-# It takes two arguments: attacks, which is a tuple of Attack objects, and attack_timeout, which is a datetime.timedelta 
-# representing the time interval after which an attack is considered to have ended. 
-# The function returns a tuple of two elements: the first element is a tuple of strings representing the identity of each attack, 
-# and the second element is a tuple of integers representing the number of attacks at each time step.
+# The function starts by initializing some variables, including identity, which is a counter used to generate unique identities for each multi-protocol attack, and identities, a dictionary that maps attack indices to their corresponding identities. It then enters a loop that iterates over each attack in the input tuple.
 
-# The function starts by initializing a variable identity to 1, which will be used to assign an identity to each attack. 
-# It then creates an empty dictionary identities that will store the identity of each attack. 
-# It also initializes a variable count to 0, which will be used to keep track of the number of multi-protocol attacks.
+# For each attack, the function checks if it has already been assigned an identity. If so, the function appends the count of the corresponding multi-protocol attack to the counts list and moves on to the next attack. Otherwise, it generates a new identity for the multi-protocol attack and adds it to the identities dictionary.
 
-# The function then loops through each attack in the attacks tuple using enumerate, and checks if the attack has already been assigned an identity. 
-# If it has, the count is appended to the counts list and the loop continues to the next attack. 
-# Otherwise, the function creates a new identity for the attack by concatenating the hexadecimal representation of the observed 
-# first timestamp of the attack and the identity value. The identities dictionary is updated with the new identity and the identity value is incremented.
+# The function then enters another loop that iterates over all subsequent attacks in the input tuple. For each attack, the function checks if it occurred within the timeout period of the previous attack and has the same victim as the previous attack. If so, the function checks if the attack was performed on a different port than the previous attack, and if so, it assigns the same identity as the previous attack and updates the observed_last time.
 
-# The function then initializes a variable observed_last to the observed_last value of the attack. 
-# It also initializes a boolean variable seen to False, which will be used to check if the attack is multi-protocol.
+# The function continues iterating over subsequent attacks until either the timeout period has elapsed or no more attacks meet the criteria for being part of the same multi-protocol attack.
 
-# The function then loops through the remaining attacks in the attacks tuple, starting from the next attack after the current one, using a `while loop. 
-# For each attack, the function checks if the time difference between the observed_last value of the current attack and 
-# the observed_first value of the future attack is greater than the attack_timeout value. If it is, the loop is exited. 
-# If the future attack is a multi-protocol attack, the identities dictionary is updated with the identity of the current attack. 
-# If the observed_last value of the future attack is greater than the observed_last value of the current attack, the observed_last value is 
-# updated to the observed_last value of the future attack.
+# Finally, the function appends the count of the current multi-protocol attack to the counts list, and then returns the identities and counts as tuples.
 
-# Finally, the count is appended to the counts list and the function returns a tuple of the identities and counts. 
-# The identities are sorted according to the order of the attacks in the attacks tuple.
 def track_attack_multi_protocol(
     attacks: T.Tuple[Attack, ...],
     attack_timeout: dt.timedelta,
@@ -568,7 +533,6 @@ def track_attack_multi_protocol(
 
         future_index = index + 1
         while future_index < len(attacks):
-            #checks if the attacks are not finished
             future_attack = attacks[future_index]
             if (
                 observed_last is not None
@@ -608,71 +572,14 @@ def track_attack_multi_protocol(
     return tuple(identities[index] for index in sorted(identities)), tuple(
         counts
     )
-#This is a function that tracks carpet bombing attacks 
-# in a sequence of attacks. Carpet bombing is a type of
-#  DDoS attack where an attacker sends a large number 
-# of requests to multiple hosts within the same network 
-# prefix (typically a /24 prefix), overwhelming the 
-# network and causing service disruption. 
-# The function takes a tuple of Attack objects 
-# (which have attributes such as victim and observed_first), 
-# and an attack timeout (a timedelta object representing the 
-# maximum time between two attacks to consider them part of 
-# the same attack).
 
-# The function starts by initializing an identity variable to 1, 
-# and an empty dictionary identities to keep track of the identity 
-# of each attack (i.e., which attacks belong to the same carpet 
-# bombing attack). It also initializes a count variable to 0 and 
-# an empty list counts to keep track of the number of distinct 
-# carpet bombing attacks seen so far.
+# This function is used to track carpet bombing attacks in a given set of attacks. The function takes a tuple of `Attack` objects and an attack timeout duration as input, and returns two tuples as output. 
 
-# The function then enters a loop over the attacks in the input tuple. 
-# For each attack, it first checks if the attack has already 
-# been assigned an identity in the identities dictionary. 
-# If it has, the corresponding count is appended to the counts list 
-# and the loop continues with the next attack.
+# The first tuple contains unique identifiers for each carpet bombing attack, and the second tuple contains the number of attacks associated with each identifier. 
 
-# If the attack has not been assigned an identity yet, 
-# the function creates a new identity string for it 
-# using the observed_first timestamp and the identity variable, 
-# and updates the identities dictionary accordingly. 
-# It then initializes an observed_last variable to the observed_last 
-# attribute of the current attack, and sets a seen flag to False.
+# Inside the function, it initializes some variables and prints a message to the standard error stream indicating that carpet bombing attacks are being tracked. Then, it iterates through each attack in the input tuple, checking if it has already been assigned an identifier. If it has, it appends the count of attacks associated with that identifier to a list and continues to the next attack. Otherwise, it assigns a new identifier to the attack and checks for subsequent attacks that match the carpet bombing criteria (i.e., attacks that target multiple hosts within the same /24 prefix). It keeps extending the attack until it either times out or no more attacks are found that match the criteria. It then adds the count of attacks associated with that identifier to a list and moves to the next unassigned attack. 
 
-# The function then enters a nested loop over the remaining attacks 
-# in the input tuple, starting from the next attack after the current 
-# one. For each remaining attack, it first checks if the time between 
-# the observed_last attribute of the current attack and the 
-# observed_first attribute of the future attack is greater 
-# than the attack_timeout parameter. If it is, the loop breaks, 
-# as this means that the current carpet bombing attack has ended.
-
-# If the time between the attacks is within the timeout, 
-# the function checks if the future attack is targeting 
-# the same victim as the current attack, and if it has an 
-# IP address within the same network prefix as the current 
-# attack (i.e., the same first three octets of the IP address). 
-# If it does, the function considers the future attack to be 
-# part of the same carpet bombing attack, and updates the identities 
-# dictionary and the observed_last variable accordingly. 
-# If this is the first attack in the carpet bombing attack that 
-# is seen with a different IP address within the network prefix, 
-# the seen flag is set to True.
-
-# The function continues the nested loop until it has processed 
-# all remaining attacks in the input tuple, and then appends the 
-# count variable to the counts list. Finally, the function returns 
-# a tuple of two tuples: the first tuple contains the identity 
-# strings of each attack in the order they appear in the input 
-# tuple (using the sorted function on the keys of the identities 
-# dictionary); the second tuple contains the count of distinct 
-# carpet bombing attacks seen after processing each attack in the 
-# input tuple.
-
-# The function also prints messages to sys.stderr before and after the 
-# processing loop, indicating that carpet bombing attacks are being 
-# tracked.
+# Finally, the function prints a message to the standard error stream indicating that tracking of carpet bombing attacks has finished, and returns the two tuples containing the unique identifiers and associated attack counts.
 def track_attack_carpet_bombing(
     attacks: T.Tuple[Attack, ...],
     attack_timeout: dt.timedelta,
@@ -694,11 +601,10 @@ def track_attack_carpet_bombing(
         if index in identities:
             counts.append(count)
             continue
-        #tracks the identity of attack or assigns them an identity
+
         current_identity = (
             f"CB_0x{int(attack.observed_first.timestamp()):X}${identity}"
         )
-        #adds to the list of idedntities
         identities[index] = current_identity
         identity += 1
         observed_last: T.Optional[dt.datetime] = attack.observed_last
@@ -748,57 +654,24 @@ def track_attack_carpet_bombing(
     return tuple(identities[index] for index in sorted(identities)), tuple(
         counts
     )
-# This is a Python function that tracks and groups together 
-# network attacks based on their characteristics.
 
-# The function takes in two arguments: 
-# attacks, which is a tuple of Attack objects,
-#  and attack_timeout, which is a timedelta object
-#  representing the maximum time difference between
-#  two attacks in order for them to be considered 
-# part of the same group.
+# This is a Python function that takes in a tuple of `Attack` objects and a timeout duration, and returns a tuple of identities and counts. The function tracks carpet bombing and multi-protocol attacks by identifying attacks that occur within the same /24 network prefix and have different ports, and then tracks those attacks until they either end or exceed the timeout duration.
 
-# The function initializes a counter identity and a dictionary 
-# identities to keep track of which attacks belong to which group. 
-# It also initializes a count variable to keep track of the total 
-# number of attack groups found, and a list counts to store 
-# the number of attacks in each group.
+# The identities are represented as strings that start with "CBMP" (for carpet bombing multi-protocol), followed by the hex value of the first observed timestamp of the attack, followed by a unique identifier. The counts represent the number of distinct carpet bombing multi-protocol attacks that were identified.
 
-# The function then loops through each attack in the 
-# attacks tuple, and checks whether it has already been assigned 
-# to a group by checking whether its index is in the identities 
-# dictionary. If the attack has already been assigned to a group, 
-# the function adds the number of attacks in that group to 
-# the counts list and continues to the next attack.
+# The function first initializes an identity counter and a dictionary to store identities, and a count variable and a list to store counts. It then prints a message to stderr indicating that the tracking process has started. 
 
-# If the attack has not been assigned to a group, 
-# the function creates a new group identity for it, 
-# and sets the seen_carpet_bombing, seen_multi_protocol, and 
-# seen variables to False. 
-# It also extracts the prefix of the victim IP address 
-# using os.path.splitext, and initializes a contributors 
-# set to keep track of which attacks contribute to the current group.
+# The function then iterates through the tuple of `Attack` objects, and for each attack, it checks whether it has already been assigned an identity. If it has, the function appends the previously calculated count to the counts list and moves on to the next attack. If it hasn't, the function calculates a new identity using the attack's observed first timestamp and the identity counter, adds the identity to the dictionary, and increments the identity counter.
 
-# The function then loops through the remaining attacks in the 
-# attacks tuple, starting from the index of the current attack plus one. For each future attack, it checks whether it occurred within the attack_timeout time frame of the current attack. If it occurred outside the time frame, the function breaks out of the loop.
+# The function then initializes flags for tracking whether a carpet bombing and a multi-protocol attack have been seen for the current attack, as well as a flag for whether any attack has been seen. It then extracts the prefix (first three octets) of the victim's IP address and initializes a set to keep track of the indexes of attacks that may contribute to the current attack's identity.
 
-# For each future attack, the function checks whether 
-# it shares the same prefix as the current attack. 
-# If not, it cannot contribute to the current group and the 
-# function moves on to the next future attack. 
-# If it shares the same prefix, the function checks whether it 
-# satisfies the criteria for carpet bombing or multi-protocol attacks. 
-# If it does, the function adds the index of the future attack to the contributors set.
+# The function then enters a while loop that iterates through the remaining attacks in the tuple. For each future attack, the function checks whether it occurred within the timeout duration of the current attack. If it didn't, the function breaks out of the loop. If it did, the function checks whether the future attack occurred within the same /24 prefix as the current attack and whether it has a different port. If the future attack satisfies these conditions, the function updates the relevant flags and adds the future attack's index to the contributors set. 
 
-# If the function has seen both carpet bombing and multi-protocol attacks, and the future attack shares the same prefix as the current attack, it adds the future attack to the current group by setting its identity in the identities dictionary to the current group identity.
-# If this is the first attack added to the group, the function increments the count variable.
+# If both a carpet bombing and a multi-protocol attack have been seen and the future attack also satisfies the /24 prefix condition, the function checks whether this is the first attack that satisfies these conditions. If it is, the function increments the count, assigns the current identity to all attacks in the contributors set, and updates the observed last timestamp of the current attack to the observed last timestamp of the future attack, if the future attack has a later observed last timestamp. If it isn't the first attack, the function simply assigns the current identity to the future attack and updates the observed last timestamp of the current attack if necessary.
 
-# Finally, the function returns two tuples: the first containing 
-# the group identities in the same order as the original 
-# attacks tuple, and the second containing the number 
-# of attacks in each group in the same order as the group identities.
+# Once the while loop has finished iterating through all future attacks, the function appends the count to the counts list and moves on to the next attack in the original tuple.
 
-
+# Finally, the function prints a message to stderr indicating that the tracking process has finished, and returns a tuple of identities and counts. The identities tuple is generated by sorting the keys of the identities dictionary and using them to look up the corresponding values, and the counts tuple is simply the counts list.
 def track_attack_carpet_bombing_multi_protocol(
     attacks: T.Tuple[Attack, ...],
     attack_timeout: dt.timedelta,
@@ -1047,6 +920,15 @@ def main() -> int:
 #     Merges the attack windows from each file into a single AttackWindow object.
 #     Filters the attack windows to only include those with a certain minimum number of packets.
 #     Computes various identities of the attacks (e.g. "multi_protocol_identities") and prints them to standard output.
+# This code seems to be part of a larger program that collects data on network traffic and analyzes it for attacks. 
+
+# The code starts by parsing command line arguments using the `argparse` module. It sets variables for the start and end times to collect data for, an attack timeout, a minimum packet count, the number of worker processes to use, and various other options.
+
+# It then uses a function called `file_datetime_parser` to parse the date and time from each file name in the specified directory (or directories) that match the expected pattern `'%Y-%m-%dT%H:%M:%SZ.gz'`. If the date and time falls within the specified start and end times, it adds the file name and corresponding date and time to a dictionary.
+
+# If multiple worker processes are specified, it uses a custom pool of worker processes to count the number of packets in each window of time for each file in the dictionary, then merges the results of each window of time using a parallel merge sort algorithm.
+
+# If only one worker process is specified, it uses the same process to count the packets and merge the results. Finally, the code prints the result of the analysis.
     argv = argparser.parse_args()
     #start time we want to collect
     start: dt.datetime = (
