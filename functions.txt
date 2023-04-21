@@ -1,0 +1,40 @@
+AttackTrack class:
+contains start and last timestamp of an attack. Also contains the total bytes and packets observed
+for an attack. Lastly, it contains sensors so it can track the honeypot sensor that is attacked.
+
+Attack class:
+contains the identifications an attack.
+Contains timestamps of when the attack was first seen and last seen.
+Contains the bytes and packet count they contain in total. 
+Also contains the port the attack was found.
+It contains a victim as a string and also a sensors set which you can set to track carpet bombing
+
+AttackWindow class:
+Contains the start of an attack and a list of attacks.
+
+worker_parser = responsible for attack identification
+
+
+worker_counter:
+Reponsible for slicing?? up data.
+By slicing,  i mean opening???? files.
+How this code does this is through parallel programming
+First on the file contents.
+The file contents are "sliced" up through limiting the maximum size the "lines" list contains.
+Before moving onto the next lines, the python code would rearrange each other.
+
+Once sorted, it would return a tuple of windows.
+
+worker_merger:
+Responsible for merging attack windows.
+How it does this is by comparing two attack windows.
+Once "merged", the code sorts the lines.
+Once sorted, the code checks for any overlaps.
+If there is an attack overlap, the current attack being looked at will be "extended" 
+
+
+
+
+advanced python concepts:
+enumerate > flat list on for loops = keeps track of index much easier.
+uses lambda to sort as it makes it more efficient compared to always calling a sort
