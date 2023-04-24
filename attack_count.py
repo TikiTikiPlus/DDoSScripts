@@ -84,12 +84,8 @@ class Attack:
     bytes: int
     packets: int
     amplification_port: T.Union[int, str]
-    victim: str#?? why is the victim a string? Is it so that its easier to divide it up? Also cuz there is no int that has 4 periods
-    #this is for carpet bombing??
-    #wrong. this isn't for carpet bombing. 
-    #it will be used if there is multiple sensors.
-    #maybe can be used to identify if an attack attacked a sensor or smth.
-    sensors: T.Set[str] 
+    victim: str
+    sensors: T.Set[str]
 
 
 @dataclasses.dataclass(order=True)
@@ -257,7 +253,6 @@ def worker_parser(
     # These are not confirmed to be finished (in the sense of timing out), but
     # the merge will make sure of that later.
     while tracked:
-        #pops out an item that contains attack pair and attack track
         attack_pair, attack_track = tracked.popitem()
         finished.append(
             Attack(
@@ -307,12 +302,10 @@ def worker_counter(
     with gzip.open(file_path, "rt") as file:
         log(f"Reading '{file_path}' into memory...")
         while True:
-            #line moves on if parser slice size is achieved
             lines = file.readlines(parser_slice_size or -1)
             if not lines:
                 break
             # TODO: This contains a workaround for the unsorted timestamps.
-            #sorts out the lines by their timestamp. 
             line_slices.append(
                 tuple(
                     sorted(
@@ -330,7 +323,6 @@ def worker_counter(
         f"Processing {len(line_slices)} line slices "
         f"({sum(len(lines) for lines in line_slices)} lines total)..."
     )
-    #Initializes a windows list the contains an attack window list
     windows: T.List[AttackWindow] = []
     #divides the log data into smaller chunks
     #the objects returned by worker parser are added to the windows list
@@ -397,14 +389,14 @@ def worker_merger(
 
     window = AttackWindow(low.start, low.attacks + high.attacks)
     window.attacks.sort(key=lambda x: x.observed_first)  # Just to be sure.
-        
+
     for index, attack in enumerate(window.attacks):
         if attack.observed_last is not None:
             continue
         future_index = index + 1
         while future_index < len(window.attacks):
             future_attack = window.attacks[future_index]
-            #because its already sorted, its fine to do it like this yeah?
+
             if (
                 future_attack.observed_first - attack.observed_first
                 > attack_timeout
@@ -433,7 +425,6 @@ def worker_merger(
 
     with STDERR_LOCK:
         print(
-            #makes it more efficient compared to using "" + ""
             f"{dt.datetime.now()}: Resolving overlapped attacks "
             f"for {low.start} to {high.start}...",
             file=sys.stderr,
@@ -441,7 +432,6 @@ def worker_merger(
 
     resort = False
     for index, attack in enumerate(window.attacks):
-        #because we already know that the attack isn't finished so we skip to save time
         if attack.observed_last is None:
             continue
         overlap_index = index + 1
@@ -449,7 +439,7 @@ def worker_merger(
             overlap_attack = window.attacks[overlap_index]
             if overlap_attack.observed_first > attack.observed_last:
                 break  # Save time.
-            #checks if there are victims that are the same and if they "overlap" in attacks so the attack can be continued
+
             if (
                 overlap_attack.victim == attack.victim
                 and overlap_attack.amplification_port
@@ -468,7 +458,6 @@ def worker_merger(
                         attack.observed_first,
                         overlap_attack.observed_first,
                     ),
-                    #if the overlapped attack isn't finished, set the currently looked at attack to not be finished
                     observed_last=(
                         max(attack.observed_last, overlap_attack.observed_last)
                         if overlap_attack.observed_last is not None
@@ -529,12 +518,10 @@ def track_attack_multi_protocol(
         )
 
     for index, attack in enumerate(attacks):
-        #the count in identities is the one responsible the number of attacks we have collected
         if index in identities:
             counts.append(count)
             continue
-        #0x already turns the identity into a hexed version of the attacks.
-        #instead of having to hex the timestamp
+
         current_identity = (
             f"MP_0x{int(attack.observed_first.timestamp()):X}${identity}"
         )
@@ -544,12 +531,9 @@ def track_attack_multi_protocol(
 
         seen = False  # We need to see at least two different ports.
 
-
         future_index = index + 1
         while future_index < len(attacks):
             future_attack = attacks[future_index]
-            #saves time
-            #if the attack is not yet finished
             if (
                 observed_last is not None
                 and future_attack.observed_first - observed_last
@@ -614,11 +598,10 @@ def track_attack_carpet_bombing(
         )
 
     for index, attack in enumerate(attacks):
-        #saves time again. 
         if index in identities:
             counts.append(count)
             continue
-    
+
         current_identity = (
             f"CB_0x{int(attack.observed_first.timestamp()):X}${identity}"
         )
@@ -974,11 +957,7 @@ def main() -> int:
     no_command_line_arguments_comment: bool = (
         argv.no_command_line_arguments_comment
     )
-    #i guess this accounts for possible carpet bombings? not necessarily
-    #maybe can use multiple sensor address instead?
-    #but like... why?
-    #i guess can account for 5 addresses or smth as an identifier of an attack
-    #compared to just a scan
+
     if argv.sensor_addresses:
         sensor_addresses.clear()
         for address in argv.sensor_addresses.split(","):
@@ -1038,7 +1017,6 @@ def main() -> int:
         with CustomPool(workers) as pool:
             counted = [
                 window
-                #
                 for windows in pool.starmap(
                     worker_counter,
                     (
