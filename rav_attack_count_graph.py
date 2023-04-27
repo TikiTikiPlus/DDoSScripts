@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker
 
-PATH = "/Scratch/rs266/MP-H/Attack-Counts-New-Kids/"
+PATH = "./count-psv/"
 START = dt.datetime(2018, 9, 1, tzinfo=dt.timezone.utc)
 END = dt.datetime(2020, 9, 22, tzinfo=dt.timezone.utc)
 

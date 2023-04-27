@@ -1,4 +1,9 @@
-Finish the section for AMPPOT
-Clean up rate limiting
-Talk about DNS resolvers and NTP servers and why they are potent.
-Make different chapters/sections connect.
+Learn Rav's script. Specifically advanced python scripting
+If there is a technique you dont understand, right it here yeah?
+
+Learn Jupiter
+
+Setup Anaconda and venv
+
+Since you are average, make yourself fucking great yeah??
+
